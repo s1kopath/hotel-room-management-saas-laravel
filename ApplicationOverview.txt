@@ -1,0 +1,87 @@
+Application Overview
+
+{real time update }
+
+
+The system is a Hotel Room Management Admin Panel with role-based access control. It consists of Admin and User accounts, where the Admin has full control over all users and hotel data.
+
+User Roles & Permissions
+1. Admin Panel (Super Admin)
+
+The Admin has full access and control over the entire system.
+
+Admin Features:
+
+Access all user accounts
+
+Create, edit, suspend, or delete user accounts
+
+Change username and password of any user
+
+View all hotels and rooms added by users
+
+Reserve any user’s room (displayed in Blue color)
+
+Override or modify room status
+
+Manage system-wide settings
+
+Full dashboard access with analytics (optional)
+
+2. User Panel (Hotel Owners / Staff)
+
+Users have limited access and can only manage their own hotels.
+
+User Features:
+
+Login with assigned credentials
+
+Add hotel details
+
+Upload hotel and room pictures
+
+Mark room status using color codes:
+
+🔴 Red – Occupied Room
+
+🟡 Yellow – Reserved Room
+
+🟢 Green – Vacant Room
+
+View room availability visually
+
+Cannot modify admin-reserved rooms
+
+Cannot access other users’ data
+
+Room Status Color Coding System
+Color  Status  Who Can Set
+Green  Vacant  User / Admin
+Yellow  Reserved  User
+Red  Occupied  User
+Blue  Admin Reserved  Admin only
+Access Control Rules
+
+Users can only view and manage their own hotels
+
+Admin can access and manage all hotels and users
+
+Admin actions override user actions
+
+Secure login with role-based permissions
+
+Key System Features
+
+Role-based authentication (Admin / User)
+
+Image upload support for hotels and rooms
+
+Visual room status management using colors
+
+Secure password and username management
+
+Centralized admin dashboard
+
+Scalable for multiple hotels and users
+
+need to add {history of admin reserved room freom last 30 days and can be reset every month }
