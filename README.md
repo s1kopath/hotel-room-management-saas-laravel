@@ -1,6 +1,6 @@
 ## Setup
 
-1. Clone this repo by running `git clone https://github.com/s1kopath/laravel-12-bs-5-starter.git`.
+1. Clone this repo by running `git clone https://github.com/s1kopath/hotel-room-management-saas-laravel.git`.
 2. Run `composer install` in the project root directory to install the required dependencies.
 3. Run `php artisan key:generate` to generate a new application key.
 4. Run `php artisan migrate` to migrate the database.
