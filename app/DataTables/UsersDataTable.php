@@ -23,10 +23,29 @@ class UsersDataTable extends DataTable
     {
         return (new EloquentDataTable($query))
             ->addIndexColumn()
-            ->editColumn('phone', fn($row) => $row->phone ?? '--')
+            ->editColumn('username', fn($row) => $row->username ?? '--')
+            ->editColumn('full_name', fn($row) => $row->full_name ?? '--')
             ->editColumn('email', fn($row) => $row->email ?? '--')
+            ->editColumn('phone', fn($row) => $row->phone ?? '--')
+            ->editColumn('user_type', function ($row) {
+                $badges = [
+                    'super_admin' => '<span class="badge bg-danger">Super Admin</span>',
+                    'hotel_owner' => '<span class="badge bg-primary">Hotel Owner</span>',
+                    'staff' => '<span class="badge bg-info">Staff</span>',
+                ];
+                return $badges[$row->user_type] ?? $row->user_type;
+            })
+            ->editColumn('status', function ($row) {
+                $badges = [
+                    'active' => '<span class="badge bg-success">Active</span>',
+                    'suspended' => '<span class="badge bg-warning">Suspended</span>',
+                    'deleted' => '<span class="badge bg-secondary">Deleted</span>',
+                ];
+                return $badges[$row->status] ?? $row->status;
+            })
             ->editColumn('created_at', fn($row) => date('d/m/Y', strtotime($row->created_at)))
             ->addColumn('action', fn($row) => view('users.components.action', compact('row'))->render())
+            ->rawColumns(['user_type', 'status', 'action'])
             ->setRowId('id');
     }
 
@@ -71,14 +90,17 @@ class UsersDataTable extends DataTable
                 ->orderable(false)
                 ->width(40)
                 ->addClass('text-center'),
-            Column::make('name'),
+            Column::make('username')->title('Username'),
+            Column::make('full_name')->title('Full Name'),
             Column::make('email'),
             Column::make('phone'),
+            Column::make('user_type')->title('User Type'),
+            Column::make('status'),
             Column::make('created_at')->title('Joined'),
             Column::computed('action')
                 ->exportable(false)
                 ->printable(false)
-                ->width(60)
+                ->width(120)
                 ->addClass('text-center'),
         ];
     }

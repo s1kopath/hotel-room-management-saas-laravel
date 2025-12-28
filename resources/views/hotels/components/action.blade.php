@@ -4,29 +4,33 @@
     </button>
     <ul class="dropdown-menu dropdown-menu-end">
         <li>
-            <a href="{{ route('users.show', $row->id) }}" class="dropdown-item d-flex align-items-center gap-1">
+            <a href="{{ route('hotels.show', $row->id) }}" class="dropdown-item d-flex align-items-center gap-1">
                 <i class="material-symbols-rounded">visibility</i> View
             </a>
         </li>
+        @hasPermission('hotels.edit-own')
         <li>
-            <a href="javascript:void(0)" onclick="loadModal('{{ route('users.edit', $row->id) }}')" 
+            <a href="javascript:void(0)" onclick="loadModal('{{ route('hotels.edit', $row->id) }}')" 
                 class="dropdown-item d-flex align-items-center gap-1">
                 <i class="material-symbols-rounded">edit</i> Edit
             </a>
         </li>
+        @endhasPermission
+        @hasPermission('hotels.delete-own')
         <li>
-            <a href="javascript:void(0)" onclick="deleteUser({{ $row->id }})" 
+            <a href="javascript:void(0)" onclick="deleteHotel({{ $row->id }})" 
                 class="dropdown-item d-flex align-items-center gap-1 text-danger">
-                <i class="material-symbols-rounded">delete</i> Delete
+                <i class="material-symbols-rounded">delete</i> Archive
             </a>
         </li>
+        @endhasPermission
     </ul>
 </div>
 
 <script>
-function deleteUser(userId) {
-    if (confirm('Are you sure you want to delete this user? This will set their status to deleted.')) {
-        fetch(`/users/${userId}`, {
+function deleteHotel(hotelId) {
+    if (confirm('Are you sure you want to archive this hotel? This will set its status to archived.')) {
+        fetch(`/hotels/${hotelId}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -39,13 +43,14 @@ function deleteUser(userId) {
             if (data.success || response.ok) {
                 location.reload();
             } else {
-                alert(data.message || 'Error deleting user');
+                alert(data.message || 'Error archiving hotel');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error deleting user');
+            alert('Error archiving hotel');
         });
     }
 }
 </script>
+
