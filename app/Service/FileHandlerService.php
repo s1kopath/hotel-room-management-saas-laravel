@@ -15,8 +15,12 @@ class FileHandlerService
 
     private function ensureDirectoryExists($path, $disk = 'public')
     {
-        if (!Storage::disk($disk)->exists($path)) {
-            Storage::disk($disk)->makeDirectory($path, 0755, true);
+        // Remove leading /public/ if present, as Storage::disk('public') already points to storage/app/public
+        $relativePath = preg_replace('#^/public/#', '', $path);
+        $relativePath = ltrim($relativePath, '/');
+        
+        if (!Storage::disk($disk)->exists($relativePath)) {
+            Storage::disk($disk)->makeDirectory($relativePath, 0755, true);
         }
     }
 

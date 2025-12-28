@@ -21,21 +21,35 @@
                     <span class="nav-link-text ms-1">Dashboard</span>
                 </a>
             </li>
+            @if(auth()->user()->isSuperAdmin())
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('users.index') ? 'active bg-gradient-dark bg-brand-secondary text-white' : 'text-brand' }}"
+                <a class="nav-link {{ request()->routeIs('users.*') ? 'active bg-gradient-dark bg-brand-secondary text-white' : 'text-brand' }}"
                     href="{{ route('users.index') }}">
                     <i class="material-symbols-rounded opacity-5">people</i>
                     <span class="nav-link-text ms-1">Users</span>
                 </a>
             </li>
+            @endif
 
+            @hasPermission('hotels.view-own')
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('test') ? 'active bg-gradient-dark bg-brand-secondary text-white' : 'text-brand' }}"
-                    href="{{ route('test') }}">
-                    <i class="material-symbols-rounded opacity-5">test</i>
-                    <span class="nav-link-text ms-1"></span>
+                <a class="nav-link {{ request()->routeIs('hotels.*') ? 'active bg-gradient-dark bg-brand-secondary text-white' : 'text-brand' }}"
+                    href="{{ route('hotels.index') }}">
+                    <i class="material-symbols-rounded opacity-5">hotel</i>
+                    <span class="nav-link-text ms-1">Hotels</span>
                 </a>
             </li>
+            @endhasPermission
+
+            @hasPermission('rooms.view-own')
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('rooms.*') ? 'active bg-gradient-dark bg-brand-secondary text-white' : 'text-brand' }}"
+                    href="{{ route('rooms.index') }}">
+                    <i class="material-symbols-rounded opacity-5">bed</i>
+                    <span class="nav-link-text ms-1">Rooms</span>
+                </a>
+            </li>
+            @endhasPermission
         </ul>
     </div>
     <div class="sidenav-footer position-absolute w-100 bottom-0">

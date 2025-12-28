@@ -10,6 +10,8 @@ class RoomStatusHistory extends Model
 {
     use HasFactory;
 
+    public $timestamps = false; // This table uses changed_at instead of created_at/updated_at
+
     protected $table = 'room_status_history';
 
     protected $fillable = [

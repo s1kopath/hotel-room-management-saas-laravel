@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\Auth\ResetPasswordController;
 use App\Http\Controllers\Admin\Auth\ForgotPasswordController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\HotelController;
+use App\Http\Controllers\Admin\RoomController;
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -36,14 +37,15 @@ Route::middleware(['admin'])->group(function () {
     });
 
     // Hotels - Permission-based access
-    Route::middleware(['permission:hotels.view-own,hotels.view-all'])->group(function () {
-        Route::get('/hotels', [HotelController::class, 'index'])->name('hotels.index');
-        Route::get('/hotels/{hotel}', [HotelController::class, 'show'])->name('hotels.show');
-    });
-
+    // IMPORTANT: Create route must come before {hotel} route to avoid route conflicts
     Route::middleware(['permission:hotels.create'])->group(function () {
         Route::get('/hotels/create', [HotelController::class, 'create'])->name('hotels.create');
         Route::post('/hotels', [HotelController::class, 'store'])->name('hotels.store');
+    });
+
+    Route::middleware(['permission:hotels.view-own,hotels.view-all'])->group(function () {
+        Route::get('/hotels', [HotelController::class, 'index'])->name('hotels.index');
+        Route::get('/hotels/{hotel}', [HotelController::class, 'show'])->name('hotels.show');
     });
 
     Route::middleware(['permission:hotels.edit-own,hotels.edit-all'])->group(function () {
@@ -53,6 +55,31 @@ Route::middleware(['admin'])->group(function () {
 
     Route::middleware(['permission:hotels.delete-own'])->group(function () {
         Route::delete('/hotels/{hotel}', [HotelController::class, 'destroy'])->name('hotels.destroy');
+    });
+
+    // Rooms - Permission-based access with hotel filtering
+    // IMPORTANT: Create route must come before {room} route to avoid route conflicts
+    Route::middleware(['permission:rooms.create'])->group(function () {
+        Route::get('/rooms/create', [RoomController::class, 'create'])->name('rooms.create');
+        Route::post('/rooms', [RoomController::class, 'store'])->name('rooms.store');
+    });
+
+    Route::middleware(['permission:rooms.view-own,rooms.view-all'])->group(function () {
+        Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
+        Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('rooms.show');
+    });
+
+    Route::middleware(['permission:rooms.edit'])->group(function () {
+        Route::get('/rooms/{room}/edit', [RoomController::class, 'edit'])->name('rooms.edit');
+        Route::put('/rooms/{room}', [RoomController::class, 'update'])->name('rooms.update');
+    });
+
+    Route::middleware(['permission:rooms.change-status'])->group(function () {
+        Route::post('/rooms/{room}/change-status', [RoomController::class, 'changeStatus'])->name('rooms.change-status');
+    });
+
+    Route::middleware(['permission:rooms.delete'])->group(function () {
+        Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
     });
 });
 

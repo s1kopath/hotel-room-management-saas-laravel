@@ -10,6 +10,8 @@ class HotelImage extends Model
 {
     use HasFactory;
 
+    public $timestamps = false; // This table uses uploaded_at instead of created_at/updated_at
+
     protected $fillable = [
         'hotel_id',
         'image_url',

@@ -89,6 +89,7 @@ class HotelController extends Controller
                     'image_type' => $index === 0 ? 'main' : 'gallery',
                     'display_order' => $index,
                     'uploaded_by' => Auth::id(),
+                    'uploaded_at' => now(),
                 ]);
             }
         }
@@ -194,12 +195,13 @@ class HotelController extends Controller
             foreach ($request->file('images') as $index => $image) {
                 $imagePath = $fileHandler->uploadImageAndGetPath($image, '/public/hotels');
                 
-                $hotel->images()->create([
-                    'image_url' => $imagePath,
-                    'image_type' => ($existingImagesCount + $index === 0) ? 'main' : 'gallery',
-                    'display_order' => $existingImagesCount + $index,
-                    'uploaded_by' => Auth::id(),
-                ]);
+                    $hotel->images()->create([
+                        'image_url' => $imagePath,
+                        'image_type' => ($existingImagesCount + $index === 0) ? 'main' : 'gallery',
+                        'display_order' => $existingImagesCount + $index,
+                        'uploaded_by' => Auth::id(),
+                        'uploaded_at' => now(),
+                    ]);
             }
         }
 

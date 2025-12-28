@@ -138,7 +138,7 @@
                 <a href="javascript:void(0)" onclick="loadModal('{{ route('hotels.edit', $hotel->id) }}')" 
                     class="btn btn-primary">Edit Hotel</a>
                 @endhasPermission
-                <a href="{{ route('hotels.rooms.index', $hotel->id) }}" class="btn btn-info">Manage Rooms</a>
+                <a href="{{ route('rooms.index', ['hotel_id' => $hotel->id]) }}" class="btn btn-info">Manage Rooms</a>
             </div>
         </div>
     </div>
