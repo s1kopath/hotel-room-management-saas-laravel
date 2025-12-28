@@ -17,7 +17,7 @@
 
 ### ❌ What Needs to Be Done
 
--   Update User model to match schema (UUID, user_type, parent_user_id, etc.)
+-   Update User model to match schema (user_type, parent_user_id, etc.)
 -   Implement role-permission system (Spatie-style, custom implementation)
 -   Create all database migrations (17 tables from schema)
 -   Create all Eloquent models with relationships
@@ -43,8 +43,7 @@
 
 #### 1.1 Update Core User System
 
--   [ ] Install UUID package (ramsey/uuid)
--   [ ] Update users migration to match schema (UUID, user_type enum, parent_user_id, status, etc.)
+-   [ ] Update users migration to match schema (user_type enum, parent_user_id, status, etc.)
 -   [ ] Update User model (relationships, casts, scopes)
 -   [ ] Create user factory and seeder
 -   [ ] Update authentication to work with new user structure
@@ -283,10 +282,9 @@
 
 ### Key Decisions to Make
 
-1. **UUID vs Auto-increment IDs**
+1. **Auto-increment IDs**
 
-    - Schema uses UUID → Install ramsey/uuid package
-    - Use UUID for all primary keys
+    - Use default ID for all primary keys
 
 2. **Role-Permission Package**
 
@@ -308,10 +306,8 @@
 
 ### Database Conventions
 
--   All primary keys: UUID
 -   All timestamps: created_at, updated_at
 -   Soft deletes: Use deleted_at where appropriate
--   Foreign keys: UUID references
 
 ### Permission Checking Pattern
 
@@ -344,12 +340,3 @@ RoomStatusHistory::create([
     'changed_by' => auth()->id(),
 ]);
 ```
-
----
-
-## Next Steps
-
-1. Review this plan
-2. Confirm decisions (UUID, custom roles, etc.)
-3. Start with Phase 1.1 - Update User system
-4. Follow phases sequentially
