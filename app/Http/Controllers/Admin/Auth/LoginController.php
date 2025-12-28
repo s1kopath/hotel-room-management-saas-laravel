@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
@@ -15,17 +17,50 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
+        $request->validate([
+            'login' => ['required', 'string'], // Can be username or email
+            'password' => ['required', 'string'],
         ]);
 
-        if (Auth::attempt($credentials)) {
+        // Determine if login is email or username
+        $loginField = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
+        // Find user by email or username
+        $user = User::where($loginField, $request->login)->first();
+
+        // Check if user exists
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'login' => ['The provided credentials do not match our records.'],
+            ]);
+        }
+
+        // Check user status
+        if ($user->status === 'suspended') {
+            throw ValidationException::withMessages([
+                'login' => ['Your account has been suspended. Please contact administrator.'],
+            ]);
+        }
+
+        if ($user->status === 'deleted') {
+            throw ValidationException::withMessages([
+                'login' => ['Your account has been deleted. Please contact administrator.'],
+            ]);
+        }
+
+        // Attempt authentication
+        if (Auth::attempt([$loginField => $request->login, 'password' => $request->password])) {
+            // Update last login timestamp
+            $user->update(['last_login' => now()]);
+
             $request->session()->regenerate();
+
             return to_route('dashboard')->with('success', 'You are logged in!');
         }
 
-        return back()->with('error', 'The provided credentials do not match our records.');
+        throw ValidationException::withMessages([
+            'login' => ['The provided credentials do not match our records.'],
+        ]);
     }
 
     public function logout(Request $request)

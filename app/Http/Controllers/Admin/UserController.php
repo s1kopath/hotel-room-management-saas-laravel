@@ -31,15 +31,27 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'username' => 'required|string|max:50|unique:users,username',
+            'email' => 'required|string|email|max:100|unique:users,email',
+            'full_name' => 'nullable|string|max:200',
+            'phone' => 'nullable|string|max:20',
             'password' => 'required|string|min:8',
-            'is_active' => 'required',
+            'user_type' => 'required|in:super_admin,hotel_owner,staff',
+            'status' => 'required|in:active,suspended,deleted',
+            'parent_user_id' => 'nullable|exists:users,id',
         ]);
-        $request['password'] = bcrypt($request->password);
-        $request['is_active'] = $request->is_active == '1' ? true : false;
 
-        User::create($request->all());
+        $user = User::create([
+            'username' => $request->username,
+            'email' => $request->email,
+            'full_name' => $request->full_name,
+            'phone' => $request->phone,
+            'password' => bcrypt($request->password),
+            'user_type' => $request->user_type,
+            'status' => $request->status,
+            'parent_user_id' => $request->parent_user_id,
+            'created_by' => auth()->id(),
+        ]);
 
         return to_route('users.index')->with('success', 'User created successfully!');
     }

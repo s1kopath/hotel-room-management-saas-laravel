@@ -18,20 +18,24 @@ class RegisterController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'username' => ['required', 'string', 'max:50', 'unique:users,username'],
+            'email' => ['required', 'string', 'email', 'max:100', 'unique:users,email'],
+            'full_name' => ['required', 'string', 'max:200'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         $user = User::create([
-            'name' => $request->name,
+            'username' => $request->username,
             'email' => $request->email,
+            'full_name' => $request->full_name,
             'password' => Hash::make($request->password),
-            'is_admin' => 1
+            'user_type' => 'hotel_owner', // Default to hotel_owner for registration
+            'status' => 'active',
+            'created_by' => null, // Self-registered
         ]);
 
         Auth::login($user);
 
-        return to_route('dashboard')->with('success', 'You are registered in!');
+        return to_route('dashboard')->with('success', 'You are registered successfully!');
     }
 }

@@ -20,11 +20,11 @@
                             <form role="form" method="POST" action="{{ route('login') }}" class="text-start">
                                 @csrf
                                 <div class="input-group input-group-outline my-3">
-                                    <label class="form-label">Email</label>
-                                    <input type="email" name="email"
-                                        class="form-control @error('email') is-invalid @enderror"
-                                        value="{{ old('email') }}" required autocomplete="email" autofocus>
-                                    @error('email')
+                                    <label class="form-label">Username or Email</label>
+                                    <input type="text" name="login"
+                                        class="form-control @error('login') is-invalid @enderror"
+                                        value="{{ old('login') }}" required autocomplete="username" autofocus>
+                                    @error('login')
                                         <span class="invalid-feedback" role="alert">
                                             <strong>{{ $message }}</strong>
                                         </span>

@@ -13,16 +13,31 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('phone')->nullable();
-            $table->string('profile_photo_url')->nullable();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->boolean('is_active')->default(true);
-            $table->boolean('is_admin')->default(false);
+            $table->string('username', 50)->unique();
+            $table->string('email', 100)->unique();
+            $table->string('password'); // Laravel uses 'password' by default, but schema shows 'password_hash'
+            $table->string('full_name', 200)->nullable();
+            $table->string('phone', 20)->nullable();
+            $table->enum('user_type', ['super_admin', 'hotel_owner', 'staff'])->default('staff');
+            $table->unsignedBigInteger('parent_user_id')->nullable();
+            $table->enum('status', ['active', 'suspended', 'deleted'])->default('active');
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->timestamp('last_login')->nullable();
             $table->rememberToken();
             $table->timestamps();
+
+            // Indexes
+            $table->index('username');
+            $table->index('email');
+            $table->index('user_type');
+            $table->index('status');
+            $table->index('parent_user_id');
+        });
+
+        // Add self-referencing foreign keys after table creation
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('parent_user_id')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

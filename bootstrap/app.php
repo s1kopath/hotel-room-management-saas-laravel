@@ -12,7 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Register custom middleware aliases
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'super.admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
+            'permission' => \App\Http\Middleware\PermissionMiddleware::class,
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'hotel.access' => \App\Http\Middleware\HotelAccessMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

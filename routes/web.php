@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Middleware\AdminMiddleware;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\Auth\RegisterController;
@@ -25,13 +24,15 @@ Route::middleware('guest')->group(function () {
 
 Route::get('logout', [LoginController::class, 'logout'])->name('logout');
 
-// Protected Routes
-Route::middleware([AdminMiddleware::class])->group(function () {
+// Protected Routes - All authenticated users
+Route::middleware(['admin'])->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    // users
-    Route::resource('users', UserController::class);
+    // Users - Only super admin can manage users
+    Route::middleware(['super.admin'])->group(function () {
+        Route::resource('users', UserController::class);
+    });
 });
 
 Route::get('test', function () {
