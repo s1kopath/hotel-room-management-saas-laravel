@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\Auth\ForgotPasswordController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\HotelController;
 use App\Http\Controllers\Admin\RoomController;
+use App\Http\Controllers\Admin\GuestController;
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -80,6 +81,32 @@ Route::middleware(['admin'])->group(function () {
 
     Route::middleware(['permission:rooms.delete'])->group(function () {
         Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
+    });
+
+    // Guests - Permission-based access
+    // IMPORTANT: Create route must come before {guest} route to avoid route conflicts
+    Route::middleware(['permission:guests.create'])->group(function () {
+        Route::get('/guests/create', [GuestController::class, 'create'])->name('guests.create');
+        Route::post('/guests', [GuestController::class, 'store'])->name('guests.store');
+    });
+
+    Route::middleware(['permission:guests.view-own,guests.view-all'])->group(function () {
+        Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
+        Route::get('/guests/{guest}', [GuestController::class, 'show'])->name('guests.show');
+    });
+
+    Route::middleware(['permission:guests.edit'])->group(function () {
+        Route::get('/guests/{guest}/edit', [GuestController::class, 'edit'])->name('guests.edit');
+        Route::put('/guests/{guest}', [GuestController::class, 'update'])->name('guests.update');
+    });
+
+    Route::middleware(['permission:guests.delete'])->group(function () {
+        Route::delete('/guests/{guest}', [GuestController::class, 'destroy'])->name('guests.destroy');
+    });
+
+    // Guest search (for AJAX)
+    Route::middleware(['permission:guests.view-own,guests.view-all'])->group(function () {
+        Route::get('/guests/search', [GuestController::class, 'search'])->name('guests.search');
     });
 });
 
