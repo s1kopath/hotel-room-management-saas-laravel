@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RolePermissionSeeder::class,
             SystemSettingSeeder::class,
+            // UserSeeder should run after roles are created
+            UserSeeder::class,
         ]);
 
         $this->command->info('Database seeding completed successfully!');
