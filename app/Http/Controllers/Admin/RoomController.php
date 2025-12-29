@@ -8,6 +8,7 @@ use App\Models\RoomStatusHistory;
 use App\DataTables\RoomsDataTable;
 use App\Http\Controllers\Controller;
 use App\Service\FileHandlerService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -154,6 +155,9 @@ class RoomController extends Controller
             // Update hotel total_rooms count
             $hotel = Hotel::find($request->hotel_id);
             $hotel->increment('total_rooms');
+
+            // Log activity
+            app(ActivityLogService::class)->logRoomCreated($room->id, $room->room_number);
 
             DB::commit();
 
@@ -336,6 +340,14 @@ class RoomController extends Controller
                 'notes' => $request->notes ?? 'Status changed',
             ]);
 
+            // Log activity
+            app(ActivityLogService::class)->logRoomStatusChanged(
+                $room->id, 
+                $room->room_number, 
+                $previousStatus, 
+                $request->status
+            );
+
             DB::commit();
 
             if (request()->expectsJson()) {
@@ -396,6 +408,8 @@ class RoomController extends Controller
         DB::beginTransaction();
         try {
             $hotelId = $room->hotel_id;
+            $roomNumber = $room->room_number;
+            $roomId = $room->id;
             
             // Delete room images
             foreach ($room->images as $image) {
@@ -415,6 +429,9 @@ class RoomController extends Controller
             if ($hotel && $hotel->total_rooms > 0) {
                 $hotel->decrement('total_rooms');
             }
+
+            // Log activity
+            app(ActivityLogService::class)->logRoomDeleted($roomId, $roomNumber);
 
             DB::commit();
 

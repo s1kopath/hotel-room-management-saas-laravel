@@ -11,6 +11,7 @@ use Yajra\DataTables\Html\Column;
 use Yajra\DataTables\Services\DataTable;
 
 class ActivityLogsDataTable extends DataTable
+{
     /**
      * Build the DataTable class.
      *

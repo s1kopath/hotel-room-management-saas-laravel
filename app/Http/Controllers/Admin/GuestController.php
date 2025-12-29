@@ -100,6 +100,9 @@ class GuestController extends Controller
             'hotel_owner_id' => $hotelOwnerId,
         ]);
 
+        // Log activity
+        app(ActivityLogService::class)->logGuestCreated($guest->id, $guest->full_name);
+
         return to_route('guests.index')->with('success', 'Guest created successfully!');
     }
 
@@ -223,6 +226,9 @@ class GuestController extends Controller
             'vip_status' => $request->has('vip_status') ? true : false,
         ]);
 
+        // Log activity
+        app(ActivityLogService::class)->logGuestUpdated($guest->id, $guest->full_name);
+
         return to_route('guests.index')->with('success', 'Guest updated successfully!');
     }
 
@@ -264,7 +270,12 @@ class GuestController extends Controller
             return back()->with('error', 'Cannot delete guest with active reservations.');
         }
 
+        $guestName = $guest->full_name;
+        $guestId = $guest->id;
         $guest->delete();
+
+        // Log activity
+        app(ActivityLogService::class)->logGuestDeleted($guestId, $guestName);
 
         if (request()->expectsJson()) {
             return response()->json([

@@ -291,6 +291,45 @@ class ActivityLogService
     }
 
     /**
+     * Log user deletion
+     */
+    public function logUserDeleted(int $userId, string $username): ActivityLog
+    {
+        return $this->log(
+            'delete_user',
+            'user',
+            $userId,
+            "Deleted user: {$username}"
+        );
+    }
+
+    /**
+     * Log room deletion
+     */
+    public function logRoomDeleted(int $roomId, string $roomNumber): ActivityLog
+    {
+        return $this->log(
+            'delete_room',
+            'room',
+            $roomId,
+            "Deleted room: {$roomNumber}"
+        );
+    }
+
+    /**
+     * Log guest deletion
+     */
+    public function logGuestDeleted(int $guestId, string $guestName): ActivityLog
+    {
+        return $this->log(
+            'delete_guest',
+            'guest',
+            $guestId,
+            "Deleted guest: {$guestName}"
+        );
+    }
+
+    /**
      * Log hotel access granted
      */
     public function logHotelAccessGranted(int $staffId, int $hotelId, string $staffName, string $hotelName): ActivityLog

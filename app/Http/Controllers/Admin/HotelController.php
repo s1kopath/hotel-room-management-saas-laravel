@@ -7,6 +7,7 @@ use App\Models\User;
 use App\DataTables\HotelsDataTable;
 use App\Http\Controllers\Controller;
 use App\Service\FileHandlerService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -93,6 +94,9 @@ class HotelController extends Controller
                 ]);
             }
         }
+
+        // Log activity
+        app(ActivityLogService::class)->logHotelCreated($hotel->id, $hotel->name);
 
         return to_route('hotels.index')->with('success', 'Hotel created successfully!');
     }
@@ -205,6 +209,9 @@ class HotelController extends Controller
             }
         }
 
+        // Log activity
+        app(ActivityLogService::class)->logHotelUpdated($hotel->id, $hotel->name);
+
         return to_route('hotels.index')->with('success', 'Hotel updated successfully!');
     }
 
@@ -225,7 +232,12 @@ class HotelController extends Controller
         }
 
         // Archive instead of delete
+        $hotelName = $hotel->name;
+        $hotelId = $hotel->id;
         $hotel->update(['status' => 'archived']);
+
+        // Log activity
+        app(ActivityLogService::class)->logHotelDeleted($hotelId, $hotelName);
 
         if (request()->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'Hotel archived successfully!']);

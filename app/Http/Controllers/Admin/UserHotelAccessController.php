@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Hotel;
 use App\Models\UserHotelAccess;
 use App\Http\Controllers\Controller;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;

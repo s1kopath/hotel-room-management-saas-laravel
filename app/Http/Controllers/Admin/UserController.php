@@ -54,6 +54,9 @@ class UserController extends Controller
             'created_by' => Auth::id(),
         ]);
 
+        // Log activity
+        app(ActivityLogService::class)->logUserCreated($user->id, $user->username);
+
         return to_route('users.index')->with('success', 'User created successfully!');
     }
 
@@ -116,6 +119,9 @@ class UserController extends Controller
 
         $user->update($updateData);
 
+        // Log activity
+        app(ActivityLogService::class)->logUserUpdated($user->id, $user->username);
+
         return to_route('users.index')->with('success', 'User updated successfully!');
     }
 
@@ -135,7 +141,12 @@ class UserController extends Controller
         }
 
         // Soft delete by setting status to 'deleted' instead of actually deleting
+        $username = $user->username;
+        $userId = $user->id;
         $user->update(['status' => 'deleted']);
+
+        // Log activity
+        app(ActivityLogService::class)->logUserDeleted($userId, $username);
 
         if (request()->expectsJson()) {
             return response()->json(['success' => true, 'message' => 'User deleted successfully!']);

@@ -9,6 +9,7 @@ use App\Models\Guest;
 use App\Models\AdminReservationHistory;
 use App\DataTables\ReservationsDataTable;
 use App\Http\Controllers\Controller;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -403,6 +404,9 @@ class ReservationController extends Controller
                 ]);
             }
 
+            // Log activity
+            app(ActivityLogService::class)->logReservationUpdated($reservation->id, $reservation->reservation_number);
+
             DB::commit();
 
             return to_route('reservations.show', $reservation->id)
@@ -457,6 +461,9 @@ class ReservationController extends Controller
                 'notes' => 'Guest checked in - Reservation #' . $reservation->reservation_number,
             ]);
 
+            // Log activity
+            app(ActivityLogService::class)->logCheckIn($reservation->id, $reservation->reservation_number);
+
             DB::commit();
 
             return back()->with('success', 'Guest checked in successfully!');
@@ -509,6 +516,9 @@ class ReservationController extends Controller
                 'changed_at' => now(),
                 'notes' => 'Guest checked out - Reservation #' . $reservation->reservation_number,
             ]);
+
+            // Log activity
+            app(ActivityLogService::class)->logCheckOut($reservation->id, $reservation->reservation_number);
 
             DB::commit();
 
@@ -576,6 +586,13 @@ class ReservationController extends Controller
                     'notes' => 'Reservation cancelled - Reservation #' . $reservation->reservation_number,
                 ]);
             }
+
+            // Log activity
+            app(ActivityLogService::class)->logReservationCancelled(
+                $reservation->id, 
+                $reservation->reservation_number, 
+                $request->cancellation_reason ?? null
+            );
 
             DB::commit();
 
