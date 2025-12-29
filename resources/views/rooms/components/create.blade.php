@@ -4,12 +4,43 @@
 </div>
 <form method="POST" action="{{ route('rooms.store') }}" enctype="multipart/form-data">
     @csrf
-    <input type="hidden" name="hotel_id" value="{{ $hotel->id }}">
     <div class="modal-body">
-        <div class="mb-3">
-            <label class="form-label">Hotel</label>
-            <input type="text" class="form-control" value="{{ $hotel->name }}" disabled>
-        </div>
+        @if(isset($hotels) && $hotels->count() > 1)
+            {{-- Show hotel selector if multiple hotels --}}
+            <div class="mb-3">
+                <label for="hotel_id" class="form-label">Select Hotel
+                    <span class="text-danger">*</span>
+                </label>
+                <select class="form-select border rounded-3 @error('hotel_id') is-invalid @enderror" 
+                    id="hotel_id" name="hotel_id" required>
+                    <option value="">Select a hotel</option>
+                    @foreach($hotels as $h)
+                        <option value="{{ $h->id }}" 
+                            {{ old('hotel_id', $selected_hotel_id ?? '') == $h->id ? 'selected' : '' }}>
+                            {{ $h->name }} ({{ $h->city ?? 'N/A' }})
+                        </option>
+                    @endforeach
+                </select>
+                @error('hotel_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+        @elseif(isset($hotels) && $hotels->count() == 1)
+            {{-- Show hotel name if single hotel (read-only) --}}
+            @php
+                $hotel = $hotels->first();
+            @endphp
+            <input type="hidden" name="hotel_id" value="{{ $hotel->id }}">
+            <div class="mb-3">
+                <label class="form-label">Hotel</label>
+                <input type="text" class="form-control" value="{{ $hotel->name }}" disabled>
+            </div>
+        @else
+            {{-- Fallback: should not happen, but handle gracefully --}}
+            <div class="alert alert-danger">
+                No hotels available. Please create a hotel first.
+            </div>
+        @endif
 
         <div class="mb-3">
             <label for="room_number" class="form-label">Room Number

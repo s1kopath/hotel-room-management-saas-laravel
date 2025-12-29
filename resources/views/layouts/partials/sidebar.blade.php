@@ -60,6 +60,16 @@
                 </a>
             </li>
             @endhasPermission
+
+            @hasPermission('reservations.view-own')
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('reservations.*') ? 'active bg-gradient-dark bg-brand-secondary text-white' : 'text-brand' }}"
+                    href="{{ route('reservations.index') }}">
+                    <i class="material-symbols-rounded opacity-5">event</i>
+                    <span class="nav-link-text ms-1">Reservations</span>
+                </a>
+            </li>
+            @endhasPermission
         </ul>
     </div>
     <div class="sidenav-footer position-absolute w-100 bottom-0">

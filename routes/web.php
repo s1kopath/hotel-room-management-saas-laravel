@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\HotelController;
 use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\GuestController;
+use App\Http\Controllers\Admin\ReservationController;
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -107,6 +108,40 @@ Route::middleware(['admin'])->group(function () {
     // Guest search (for AJAX)
     Route::middleware(['permission:guests.view-own,guests.view-all'])->group(function () {
         Route::get('/guests/search', [GuestController::class, 'search'])->name('guests.search');
+    });
+
+    // Reservations - Permission-based access
+    // IMPORTANT: Create route must come before {reservation} route to avoid route conflicts
+    Route::middleware(['permission:reservations.create'])->group(function () {
+        Route::get('/reservations/create', [ReservationController::class, 'create'])->name('reservations.create');
+        Route::post('/reservations', [ReservationController::class, 'store'])->name('reservations.store');
+    });
+
+    Route::middleware(['permission:reservations.view-own,reservations.view-all'])->group(function () {
+        Route::get('/reservations', [ReservationController::class, 'index'])->name('reservations.index');
+        Route::get('/reservations/{reservation}', [ReservationController::class, 'show'])->name('reservations.show');
+    });
+
+    Route::middleware(['permission:reservations.edit'])->group(function () {
+        Route::get('/reservations/{reservation}/edit', [ReservationController::class, 'edit'])->name('reservations.edit');
+        Route::put('/reservations/{reservation}', [ReservationController::class, 'update'])->name('reservations.update');
+    });
+
+    Route::middleware(['permission:reservations.check-in'])->group(function () {
+        Route::post('/reservations/{reservation}/check-in', [ReservationController::class, 'checkIn'])->name('reservations.check-in');
+    });
+
+    Route::middleware(['permission:reservations.check-out'])->group(function () {
+        Route::post('/reservations/{reservation}/check-out', [ReservationController::class, 'checkOut'])->name('reservations.check-out');
+    });
+
+    Route::middleware(['permission:reservations.cancel'])->group(function () {
+        Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel'])->name('reservations.cancel');
+    });
+
+    // Get available rooms (AJAX)
+    Route::middleware(['permission:reservations.create'])->group(function () {
+        Route::get('/reservations/available-rooms', [ReservationController::class, 'getAvailableRooms'])->name('reservations.available-rooms');
     });
 });
 

@@ -40,19 +40,40 @@ class RoomController extends Controller
     public function create(Request $request)
     {
         $hotelId = $request->get('hotel_id');
+        $user = Auth::user();
         
-        if (!$hotelId) {
-            return back()->with('error', 'Hotel ID is required.');
+        // Get accessible hotels for the user
+        if ($user->isSuperAdmin()) {
+            $hotels = Hotel::where('status', 'active')->orderBy('name')->get();
+        } elseif ($user->isHotelOwner()) {
+            $hotels = $user->hotels()->where('status', 'active')->orderBy('name')->get();
+        } elseif ($user->isStaff() && $user->parent_user_id) {
+            $hotels = Hotel::where('user_id', $user->parent_user_id)
+                ->where('status', 'active')
+                ->orderBy('name')
+                ->get();
+        } else {
+            $hotels = collect();
         }
 
-        $hotel = Hotel::findOrFail($hotelId);
-        
-        // Check access
-        if (!Auth::user()->hasAccessToHotel($hotelId)) {
-            abort(403, 'You do not have access to this hotel.');
+        // No hotels available
+        if ($hotels->isEmpty()) {
+            return back()->with('error', 'No hotels available. Please create a hotel first.');
         }
 
-        return view('rooms.components.create', compact('hotel'));
+        // If hotel_id provided, validate access
+        if ($hotelId) {
+            $selectedHotel = Hotel::find($hotelId);
+            if (!$selectedHotel || !$user->hasAccessToHotel($hotelId)) {
+                abort(403, 'You do not have access to this hotel.');
+            }
+        }
+
+        // Always pass hotels collection and optionally selected hotel_id
+        return view('rooms.components.create', [
+            'hotels' => $hotels,
+            'selected_hotel_id' => $hotelId
+        ]);
     }
 
     /**

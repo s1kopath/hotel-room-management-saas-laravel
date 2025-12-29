@@ -21,7 +21,7 @@ class GuestsDataTable extends DataTable
     {
         return (new EloquentDataTable($query))
             ->addIndexColumn()
-            ->addColumn('full_name', function($row) {
+            ->addColumn('full_name', function ($row) {
                 $name = $row->full_name;
                 if ($row->vip_status) {
                     $name .= ' <span class="badge bg-warning">VIP</span>';
@@ -31,13 +31,13 @@ class GuestsDataTable extends DataTable
             ->editColumn('email', fn($row) => $row->email ?? '--')
             ->editColumn('phone', fn($row) => $row->phone ?? '--')
             ->editColumn('city', fn($row) => $row->city ?? '--')
-            ->editColumn('reservations_count', function($row) {
+            ->editColumn('reservations_count', function ($row) {
                 return $row->reservations_count ?? 0;
             })
             ->editColumn('created_at', fn($row) => $row->created_at->format('d/m/Y'))
             ->addColumn('action', fn($row) => view('guests.components.action', compact('row'))->render())
             ->rawColumns(['full_name', 'action'])
-            ->filterColumn('full_name', function($query, $keyword) {
+            ->filterColumn('full_name', function ($query, $keyword) {
                 $query->whereRaw("CONCAT(first_name, ' ', last_name) like ?", ["%{$keyword}%"]);
             })
             ->orderColumn('full_name', 'first_name $1, last_name $1')
@@ -127,4 +127,3 @@ class GuestsDataTable extends DataTable
         return 'Guests_' . date('YmdHis');
     }
 }
-

@@ -14,7 +14,7 @@
     <div class="text-end">
         @hasPermission('rooms.create')
         <button type="button" class="btn bg-gradient-dark bg-brand-secondary mb-0"
-            onclick="loadModal('{{ route('rooms.create', isset($hotel) ? ['hotel_id' => $hotel->id] : []) }}')">
+            onclick="loadModal('{{ route('rooms.create') }}{{ isset($hotel) ? '?hotel_id=' . $hotel->id : '' }}')">
             <i class="material-symbols-rounded text-sm">add</i>&nbsp;&nbsp;Add New Room
         </button>
         @endhasPermission
