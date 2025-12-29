@@ -262,12 +262,12 @@
 
 #### 4.1 Admin Reservation History
 
--   [ ] Create view for last 30 days admin reservations
--   [ ] Implement monthly archive functionality
+-   [x] Create view for last 30 days admin reservations - **COMPLETE**
+-   [x] Implement monthly archive functionality - **COMPLETE**
 -   [x] Create admin_reservations_archive migration - **COMPLETE**
--   [ ] Create archive service/job
--   [ ] Create monthly archive command/scheduler
--   [ ] Add reset/clear archive functionality
+-   [x] Create archive service/job - **COMPLETE**
+-   [x] Create monthly archive command/scheduler - **COMPLETE**
+-   [x] Add reset/clear archive functionality - **COMPLETE**
 
 #### 4.2 Enhanced Admin Dashboard
 

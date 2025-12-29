@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\HotelController;
 use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\GuestController;
 use App\Http\Controllers\Admin\ReservationController;
+use App\Http\Controllers\Admin\AdminReservationHistoryController;
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -151,6 +152,13 @@ Route::middleware(['admin'])->group(function () {
         Route::get('/reservations/{reservation}/admin-override/edit', [ReservationController::class, 'editAdminOverride'])->name('reservations.admin-override.edit');
         Route::put('/reservations/{reservation}/admin-override', [ReservationController::class, 'updateAdminOverride'])->name('reservations.admin-override.update');
         Route::post('/reservations/{reservation}/admin-override/release', [ReservationController::class, 'releaseAdminOverride'])->name('reservations.admin-override.release');
+
+        // Admin Reservation History (Super Admin only)
+        Route::get('/admin/reservation-history', [AdminReservationHistoryController::class, 'index'])->name('admin.reservation-history.index');
+        Route::post('/admin/reservation-history/archive', [AdminReservationHistoryController::class, 'archive'])->name('admin.reservation-history.archive');
+        Route::get('/admin/reservation-history/archives', [AdminReservationHistoryController::class, 'listArchives'])->name('admin.reservation-history.archives');
+        Route::get('/admin/reservation-history/archive/{month}', [AdminReservationHistoryController::class, 'viewArchive'])->name('admin.reservation-history.archive.view');
+        Route::post('/admin/reservation-history/archive/{month}/clear', [AdminReservationHistoryController::class, 'clearArchive'])->name('admin.reservation-history.archive.clear');
     });
 });
 

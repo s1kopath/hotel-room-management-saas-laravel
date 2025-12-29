@@ -70,6 +70,16 @@
                 </a>
             </li>
             @endhasPermission
+
+            @if(auth()->user()->isSuperAdmin())
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('admin.reservation-history.*') ? 'active bg-gradient-dark bg-brand-secondary text-white' : 'text-brand' }}"
+                    href="{{ route('admin.reservation-history.index') }}">
+                    <i class="material-symbols-rounded opacity-5">history</i>
+                    <span class="nav-link-text ms-1">Admin History</span>
+                </a>
+            </li>
+            @endif
         </ul>
     </div>
     <div class="sidenav-footer position-absolute w-100 bottom-0">
