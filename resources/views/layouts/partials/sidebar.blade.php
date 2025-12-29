@@ -80,6 +80,16 @@
                 </a>
             </li>
             @endif
+
+            @if(auth()->user()->isSuperAdmin() || auth()->user()->isHotelOwner())
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('roles.*') ? 'active bg-gradient-dark bg-brand-secondary text-white' : 'text-brand' }}"
+                    href="{{ route('roles.index') }}">
+                    <i class="material-symbols-rounded opacity-5">admin_panel_settings</i>
+                    <span class="nav-link-text ms-1">Roles</span>
+                </a>
+            </li>
+            @endif
         </ul>
     </div>
     <div class="sidenav-footer position-absolute w-100 bottom-0">

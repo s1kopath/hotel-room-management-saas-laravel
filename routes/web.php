@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\GuestController;
 use App\Http\Controllers\Admin\ReservationController;
 use App\Http\Controllers\Admin\AdminReservationHistoryController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserHotelAccessController;
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -37,6 +39,13 @@ Route::middleware(['admin'])->group(function () {
     // Users - Only super admin can manage users
     Route::middleware(['super.admin'])->group(function () {
         Route::resource('users', UserController::class);
+    });
+
+    // Hotel Access Management (Hotel Owners can manage their staff)
+    Route::middleware(['admin'])->group(function () {
+        Route::get('/users/{user}/hotel-access', [UserHotelAccessController::class, 'index'])->name('users.hotel-access');
+        Route::put('/users/{user}/hotel-access', [UserHotelAccessController::class, 'update'])->name('users.hotel-access.update');
+        Route::post('/users/{user}/hotel-access/toggle/{hotel}', [UserHotelAccessController::class, 'toggle'])->name('users.hotel-access.toggle');
     });
 
     // Hotels - Permission-based access
@@ -159,6 +168,18 @@ Route::middleware(['admin'])->group(function () {
         Route::get('/admin/reservation-history/archives', [AdminReservationHistoryController::class, 'listArchives'])->name('admin.reservation-history.archives');
         Route::get('/admin/reservation-history/archive/{month}', [AdminReservationHistoryController::class, 'viewArchive'])->name('admin.reservation-history.archive.view');
         Route::post('/admin/reservation-history/archive/{month}/clear', [AdminReservationHistoryController::class, 'clearArchive'])->name('admin.reservation-history.archive.clear');
+    });
+
+    // Roles & Permissions Management
+    // Hotel owners and super admin can manage roles
+    Route::middleware(['admin'])->group(function () {
+        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
+        Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
+        Route::get('/roles/{role}', [RoleController::class, 'show'])->name('roles.show');
+        Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
+        Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+        Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
     });
 });
 

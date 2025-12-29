@@ -98,6 +98,11 @@
                 <a href="{{ route('users.index') }}" class="btn btn-secondary">Back to List</a>
                 <a href="javascript:void(0)" onclick="loadModal('{{ route('users.edit', $user->id) }}')" 
                     class="btn btn-primary">Edit User</a>
+                @if($user->isStaff() && (auth()->user()->isSuperAdmin() || auth()->user()->id == $user->parent_user_id))
+                <a href="{{ route('users.hotel-access', $user->id) }}" class="btn btn-info">
+                    Manage Hotel Access
+                </a>
+                @endif
             </div>
         </div>
     </div>
