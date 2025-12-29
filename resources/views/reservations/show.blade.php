@@ -174,11 +174,18 @@
                     <h6 class="text-uppercase text-dark font-weight-bolder">Quick Actions</h6>
                     <div class="d-grid gap-2">
                         @hasPermission('reservations.edit')
-                        @if(!$reservation->isAdminOverride() || auth()->user()->isSuperAdmin())
+                        @if($reservation->isAdminOverride() && auth()->user()->isSuperAdmin())
+                        <a href="javascript:void(0)" onclick="loadModal('{{ route('reservations.admin-override.edit', $reservation->id) }}')" 
+                            class="btn btn-primary">Edit Admin Override</a>
+                        @elseif(!$reservation->isAdminOverride())
                         <a href="javascript:void(0)" onclick="loadModal('{{ route('reservations.edit', $reservation->id) }}')" 
                             class="btn btn-primary">Edit Reservation</a>
                         @endif
                         @endhasPermission
+                        @if($reservation->isAdminOverride() && auth()->user()->isSuperAdmin())
+                        <a href="javascript:void(0)" onclick="releaseAdminOverride({{ $reservation->id }})" 
+                            class="btn btn-warning">Release Admin Override</a>
+                        @endif
                         @hasPermission('reservations.check-in')
                         @if($reservation->status == 'confirmed')
                         <form action="{{ route('reservations.check-in', $reservation->id) }}" method="POST" class="d-inline">

@@ -10,6 +10,12 @@
             <i class="material-symbols-rounded text-sm">add</i>&nbsp;&nbsp;New Reservation
         </button>
         @endhasPermission
+        @if(auth()->user()->isSuperAdmin())
+        <button type="button" class="btn bg-primary mb-0"
+            onclick="loadModal('{{ route('reservations.admin-override.create') }}')">
+            <i class="material-symbols-rounded text-sm">admin_panel_settings</i>&nbsp;&nbsp;Admin Override
+        </button>
+        @endif
     </div>
     <div class="card mt-5">
         <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">

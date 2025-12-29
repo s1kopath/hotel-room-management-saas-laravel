@@ -6,6 +6,7 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Hotel;
 use App\Models\Guest;
+use App\Models\AdminReservationHistory;
 use App\DataTables\ReservationsDataTable;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -217,12 +218,15 @@ class ReservationController extends Controller
             }
         }
 
-        // Prevent editing admin override reservations
+        // Prevent editing admin override reservations by non-admins
         if ($reservation->isAdminOverride() && !$user->isSuperAdmin()) {
             abort(403, 'Cannot edit admin override reservations.');
         }
 
-        $user = Auth::user();
+        // If it's an admin override and user is super admin, redirect to admin override edit
+        if ($reservation->isAdminOverride() && $user->isSuperAdmin()) {
+            return redirect()->route('reservations.admin-override.edit', $reservation->id);
+        }
         
         // Get accessible hotels
         if ($user->isSuperAdmin()) {
@@ -666,5 +670,357 @@ class ReservationController extends Controller
             'checked_out', 'cancelled', 'no_show' => 'vacant',
             default => 'vacant',
         };
+    }
+
+    /**
+     * Create an admin override reservation (Super Admin only)
+     */
+    public function createAdminOverride(Request $request)
+    {
+        // Only super admin can create admin override reservations
+        if (!Auth::user()->isSuperAdmin()) {
+            abort(403, 'Only super administrators can create admin override reservations.');
+        }
+
+        $hotelId = $request->get('hotel_id');
+        $roomId = $request->get('room_id');
+        $guestId = $request->get('guest_id');
+        
+        // Get all hotels
+        $hotels = Hotel::where('status', 'active')->orderBy('name')->get();
+
+        // Get rooms for selected hotel
+        $rooms = collect();
+        if ($hotelId) {
+            $hotel = Hotel::find($hotelId);
+            if ($hotel) {
+                $rooms = $hotel->rooms()->orderBy('room_number')->get();
+            }
+        }
+
+        // Get all guests
+        $guests = Guest::orderBy('first_name')->orderBy('last_name')->get();
+
+        return view('reservations.components.create-admin-override', compact('hotels', 'rooms', 'guests', 'hotelId', 'roomId', 'guestId'));
+    }
+
+    /**
+     * Show the form for editing an admin override reservation (Super Admin only)
+     */
+    public function editAdminOverride(string $id)
+    {
+        // Only super admin can edit admin override reservations
+        if (!Auth::user()->isSuperAdmin()) {
+            abort(403, 'Only super administrators can edit admin override reservations.');
+        }
+
+        $reservation = Reservation::findOrFail($id);
+
+        if (!$reservation->isAdminOverride()) {
+            return redirect()->route('reservations.edit', $reservation->id);
+        }
+
+        // Get all hotels
+        $hotels = Hotel::where('status', 'active')->orderBy('name')->get();
+
+        // Get rooms for the reservation's hotel
+        $rooms = collect();
+        if ($reservation->hotel_id) {
+            $hotel = Hotel::find($reservation->hotel_id);
+            if ($hotel) {
+                $rooms = $hotel->rooms()->orderBy('room_number')->get();
+            }
+        }
+
+        // Get all guests
+        $guests = Guest::orderBy('first_name')->orderBy('last_name')->get();
+
+        // Get latest admin history note
+        $latestHistory = AdminReservationHistory::where('reservation_id', $reservation->id)
+            ->orderBy('action_at', 'desc')
+            ->first();
+
+        return view('reservations.components.edit-admin-override', compact('reservation', 'hotels', 'rooms', 'guests', 'latestHistory'));
+    }
+
+    /**
+     * Store an admin override reservation
+     */
+    public function storeAdminOverride(Request $request)
+    {
+        // Only super admin can create admin override reservations
+        if (!Auth::user()->isSuperAdmin()) {
+            abort(403, 'Only super administrators can create admin override reservations.');
+        }
+
+        $request->validate([
+            'hotel_id' => 'required|exists:hotels,id',
+            'room_id' => 'required|exists:rooms,id',
+            'guest_id' => 'required|exists:guests,id',
+            'check_in_date' => 'required|date',
+            'check_out_date' => 'required|date|after:check_in_date',
+            'number_of_guests' => 'required|integer|min:1',
+            'total_amount' => 'nullable|numeric|min:0',
+            'special_requests' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'admin_notes' => 'nullable|string',
+        ]);
+
+        // Verify room belongs to hotel
+        $room = Room::findOrFail($request->room_id);
+        if ($room->hotel_id != $request->hotel_id) {
+            return back()->withInput()->withErrors(['room_id' => 'Selected room does not belong to the selected hotel.']);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Generate reservation number
+            $reservationNumber = $this->generateReservationNumber();
+
+            $reservation = Reservation::create([
+                'reservation_number' => $reservationNumber,
+                'room_id' => $request->room_id,
+                'hotel_id' => $request->hotel_id,
+                'guest_id' => $request->guest_id,
+                'check_in_date' => $request->check_in_date,
+                'check_out_date' => $request->check_out_date,
+                'number_of_guests' => $request->number_of_guests,
+                'reservation_type' => 'admin_override',
+                'status' => 'confirmed', // Admin override is automatically confirmed
+                'payment_status' => 'pending',
+                'total_amount' => $request->total_amount ?? 0.00,
+                'paid_amount' => 0.00,
+                'special_requests' => $request->special_requests,
+                'notes' => $request->notes,
+                'created_by' => Auth::id(),
+            ]);
+
+            // Update room status to admin_reserved
+            $previousStatus = $room->status;
+            $room->update([
+                'status' => 'admin_reserved',
+                'last_status_change' => now(),
+                'status_updated_by' => Auth::id(),
+            ]);
+
+            // Record status change in history
+            \App\Models\RoomStatusHistory::create([
+                'room_id' => $room->id,
+                'previous_status' => $previousStatus,
+                'new_status' => 'admin_reserved',
+                'changed_by' => Auth::id(),
+                'changed_at' => now(),
+                'notes' => 'Room reserved by admin override - Reservation #' . $reservationNumber,
+            ]);
+
+            // Record in admin reservation history
+            AdminReservationHistory::create([
+                'reservation_id' => $reservation->id,
+                'admin_id' => Auth::id(),
+                'action_type' => 'created',
+                'action_at' => now(),
+                'notes' => $request->admin_notes ?? 'Admin override reservation created',
+            ]);
+
+            DB::commit();
+
+            return to_route('reservations.show', $reservation->id)
+                ->with('success', 'Admin override reservation created successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Error creating admin override reservation: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Release an admin override reservation (Super Admin only)
+     */
+    public function releaseAdminOverride(Request $request, string $id)
+    {
+        // Only super admin can release admin override reservations
+        if (!Auth::user()->isSuperAdmin()) {
+            abort(403, 'Only super administrators can release admin override reservations.');
+        }
+
+        $reservation = Reservation::findOrFail($id);
+
+        if (!$reservation->isAdminOverride()) {
+            return back()->with('error', 'This is not an admin override reservation.');
+        }
+
+        if (in_array($reservation->status, ['checked_out', 'cancelled'])) {
+            return back()->with('error', 'Cannot release a reservation that is already checked out or cancelled.');
+        }
+
+        $request->validate([
+            'release_notes' => 'nullable|string|max:500',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Update reservation status to cancelled
+            $reservation->update([
+                'status' => 'cancelled',
+                'cancelled_by' => Auth::id(),
+                'cancelled_at' => now(),
+                'cancellation_reason' => 'Released by admin: ' . ($request->release_notes ?? 'No reason provided'),
+            ]);
+
+            // Release room - set to vacant
+            $room = $reservation->room;
+            $room->update([
+                'status' => 'vacant',
+                'last_status_change' => now(),
+                'status_updated_by' => Auth::id(),
+            ]);
+
+            // Record status change in history
+            \App\Models\RoomStatusHistory::create([
+                'room_id' => $room->id,
+                'previous_status' => 'admin_reserved',
+                'new_status' => 'vacant',
+                'changed_by' => Auth::id(),
+                'changed_at' => now(),
+                'notes' => 'Admin override reservation released - Reservation #' . $reservation->reservation_number,
+            ]);
+
+            // Record in admin reservation history
+            AdminReservationHistory::create([
+                'reservation_id' => $reservation->id,
+                'admin_id' => Auth::id(),
+                'action_type' => 'released',
+                'action_at' => now(),
+                'notes' => $request->release_notes ?? 'Admin override reservation released',
+            ]);
+
+            DB::commit();
+
+            return back()->with('success', 'Admin override reservation released successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error releasing admin override reservation: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update admin override reservation (Super Admin only)
+     */
+    public function updateAdminOverride(Request $request, string $id)
+    {
+        // Only super admin can update admin override reservations
+        if (!Auth::user()->isSuperAdmin()) {
+            abort(403, 'Only super administrators can update admin override reservations.');
+        }
+
+        $reservation = Reservation::findOrFail($id);
+
+        if (!$reservation->isAdminOverride()) {
+            return back()->with('error', 'This is not an admin override reservation.');
+        }
+
+        $request->validate([
+            'hotel_id' => 'required|exists:hotels,id',
+            'room_id' => 'required|exists:rooms,id',
+            'guest_id' => 'required|exists:guests,id',
+            'check_in_date' => 'required|date',
+            'check_out_date' => 'required|date|after:check_in_date',
+            'number_of_guests' => 'required|integer|min:1',
+            'status' => 'required|in:pending,confirmed,checked_in,checked_out,cancelled,no_show',
+            'payment_status' => 'required|in:pending,partial,paid,refunded',
+            'total_amount' => 'nullable|numeric|min:0',
+            'paid_amount' => 'nullable|numeric|min:0',
+            'special_requests' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'admin_notes' => 'nullable|string',
+        ]);
+
+        // Verify room belongs to hotel
+        $room = Room::findOrFail($request->room_id);
+        if ($room->hotel_id != $request->hotel_id) {
+            return back()->withInput()->withErrors(['room_id' => 'Selected room does not belong to the selected hotel.']);
+        }
+
+        DB::beginTransaction();
+        try {
+            $oldRoomId = $reservation->room_id;
+            $oldStatus = $reservation->status;
+            $newStatus = $request->status;
+
+            $reservation->update([
+                'room_id' => $request->room_id,
+                'hotel_id' => $request->hotel_id,
+                'guest_id' => $request->guest_id,
+                'check_in_date' => $request->check_in_date,
+                'check_out_date' => $request->check_out_date,
+                'number_of_guests' => $request->number_of_guests,
+                'status' => $newStatus,
+                'payment_status' => $request->payment_status,
+                'total_amount' => $request->total_amount ?? 0.00,
+                'paid_amount' => $request->paid_amount ?? 0.00,
+                'special_requests' => $request->special_requests,
+                'notes' => $request->notes,
+            ]);
+
+            // Handle room status changes
+            if ($oldRoomId != $request->room_id) {
+                // Release old room
+                $oldRoom = Room::find($oldRoomId);
+                if ($oldRoom) {
+                    $oldRoom->update([
+                        'status' => 'vacant',
+                        'last_status_change' => now(),
+                        'status_updated_by' => Auth::id(),
+                    ]);
+                }
+
+                // Reserve new room as admin_reserved
+                $room->update([
+                    'status' => 'admin_reserved',
+                    'last_status_change' => now(),
+                    'status_updated_by' => Auth::id(),
+                ]);
+            } else {
+                // Update room status based on reservation status
+                // Admin override reservations keep room as admin_reserved unless checked out
+                if ($newStatus == 'checked_out') {
+                    $room->update([
+                        'status' => 'vacant',
+                        'last_status_change' => now(),
+                        'status_updated_by' => Auth::id(),
+                    ]);
+                } elseif ($room->status != 'admin_reserved' && $newStatus != 'checked_out') {
+                    $room->update([
+                        'status' => 'admin_reserved',
+                        'last_status_change' => now(),
+                        'status_updated_by' => Auth::id(),
+                    ]);
+                }
+            }
+
+            // Handle check-in/check-out timestamps
+            if ($newStatus == 'checked_in' && !$reservation->actual_check_in) {
+                $reservation->update(['actual_check_in' => now()]);
+            }
+            if ($newStatus == 'checked_out' && !$reservation->actual_check_out) {
+                $reservation->update(['actual_check_out' => now()]);
+            }
+
+            // Record in admin reservation history
+            AdminReservationHistory::create([
+                'reservation_id' => $reservation->id,
+                'admin_id' => Auth::id(),
+                'action_type' => 'modified',
+                'action_at' => now(),
+                'notes' => $request->admin_notes ?? 'Admin override reservation modified',
+            ]);
+
+            DB::commit();
+
+            return to_route('reservations.show', $reservation->id)
+                ->with('success', 'Admin override reservation updated successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Error updating admin override reservation: ' . $e->getMessage());
+        }
     }
 }

@@ -143,6 +143,15 @@ Route::middleware(['admin'])->group(function () {
     Route::middleware(['permission:reservations.create'])->group(function () {
         Route::get('/reservations/available-rooms', [ReservationController::class, 'getAvailableRooms'])->name('reservations.available-rooms');
     });
+
+    // Admin Override Reservations (Super Admin only)
+    Route::middleware(['super.admin'])->group(function () {
+        Route::get('/reservations/admin-override/create', [ReservationController::class, 'createAdminOverride'])->name('reservations.admin-override.create');
+        Route::post('/reservations/admin-override', [ReservationController::class, 'storeAdminOverride'])->name('reservations.admin-override.store');
+        Route::get('/reservations/{reservation}/admin-override/edit', [ReservationController::class, 'editAdminOverride'])->name('reservations.admin-override.edit');
+        Route::put('/reservations/{reservation}/admin-override', [ReservationController::class, 'updateAdminOverride'])->name('reservations.admin-override.update');
+        Route::post('/reservations/{reservation}/admin-override/release', [ReservationController::class, 'releaseAdminOverride'])->name('reservations.admin-override.release');
+    });
 });
 
 Route::get('test', function () {
