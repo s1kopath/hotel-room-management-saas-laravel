@@ -14,6 +14,8 @@ use App\Http\Controllers\Admin\ReservationController;
 use App\Http\Controllers\Admin\AdminReservationHistoryController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserHotelAccessController;
+use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\SystemSettingController;
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -180,6 +182,20 @@ Route::middleware(['admin'])->group(function () {
         Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
         Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
         Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+    });
+
+    // Activity Logs (Super Admin only)
+    Route::middleware(['super.admin'])->group(function () {
+        Route::get('/admin/activity-logs', [ActivityLogController::class, 'index'])->name('admin.activity-logs.index');
+        Route::get('/admin/activity-logs/user/{user}', [ActivityLogController::class, 'userLogs'])->name('admin.activity-logs.user');
+    });
+
+    // System Settings (Super Admin only)
+    Route::middleware(['super.admin'])->group(function () {
+        Route::get('/admin/settings', [SystemSettingController::class, 'index'])->name('admin.settings.index');
+        Route::put('/admin/settings', [SystemSettingController::class, 'update'])->name('admin.settings.update');
+        Route::post('/admin/settings', [SystemSettingController::class, 'store'])->name('admin.settings.store');
+        Route::delete('/admin/settings/{setting}', [SystemSettingController::class, 'destroy'])->name('admin.settings.destroy');
     });
 });
 

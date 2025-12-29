@@ -79,6 +79,20 @@
                     <span class="nav-link-text ms-1">Admin History</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('admin.activity-logs.*') ? 'active bg-gradient-dark bg-brand-secondary text-white' : 'text-brand' }}"
+                    href="{{ route('admin.activity-logs.index') }}">
+                    <i class="material-symbols-rounded opacity-5">description</i>
+                    <span class="nav-link-text ms-1">Activity Logs</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active bg-gradient-dark bg-brand-secondary text-white' : 'text-brand' }}"
+                    href="{{ route('admin.settings.index') }}">
+                    <i class="material-symbols-rounded opacity-5">settings</i>
+                    <span class="nav-link-text ms-1">Settings</span>
+                </a>
+            </li>
             @endif
 
             @if(auth()->user()->isSuperAdmin() || auth()->user()->isHotelOwner())

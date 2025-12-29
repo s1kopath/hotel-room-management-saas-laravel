@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Role;
 use App\Models\Permission;
 use App\DataTables\RolesDataTable;
+use App\Services\ActivityLogService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -86,6 +87,9 @@ class RoleController extends Controller
             if ($request->has('permissions')) {
                 $role->permissions()->attach($request->permissions);
             }
+
+            // Log activity
+            app(ActivityLogService::class)->logRoleCreated($role->id, $role->name);
 
             DB::commit();
 
@@ -200,6 +204,9 @@ class RoleController extends Controller
                 $role->permissions()->detach();
             }
 
+            // Log activity
+            app(ActivityLogService::class)->logRoleUpdated($role->id, $role->name);
+
             DB::commit();
 
             return to_route('roles.index')
@@ -242,11 +249,17 @@ class RoleController extends Controller
 
         DB::beginTransaction();
         try {
+            $roleName = $role->name;
+            $roleId = $role->id;
+
             // Detach all permissions
             $role->permissions()->detach();
-
+            
             // Delete role
             $role->delete();
+
+            // Log activity
+            app(ActivityLogService::class)->logRoleDeleted($roleId, $roleName);
 
             DB::commit();
 
