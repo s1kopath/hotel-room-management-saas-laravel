@@ -208,7 +208,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <p class="text-xs font-weight-bold mb-0">{{ $hotel->user->full_name ?? $hotel->user->username }}</p>
+                                        <p class="text-xs font-weight-bold mb-0">{{ $hotel->owner ? ($hotel->owner->full_name ?? $hotel->owner->username) : '--' }}</p>
                                     </td>
                                     <td class="align-middle text-center text-sm">
                                         <span class="badge bg-primary">{{ $hotel->admin_reserved_count }} rooms</span>
@@ -325,8 +325,8 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <p class="text-xs font-weight-bold mb-0">{{ $hotel->user->full_name ?? $hotel->user->username }}</p>
-                                        <p class="text-xs text-secondary mb-0">{{ $hotel->user->email }}</p>
+                                        <p class="text-xs font-weight-bold mb-0">{{ $hotel->owner ? ($hotel->owner->full_name ?? $hotel->owner->username) : '--' }}</p>
+                                        <p class="text-xs text-secondary mb-0">{{ $hotel->owner ? $hotel->owner->email : '--' }}</p>
                                     </td>
                                     <td class="align-middle text-center">
                                         <span class="text-secondary text-xs font-weight-bold">{{ $hotel->rooms_count }}</span>

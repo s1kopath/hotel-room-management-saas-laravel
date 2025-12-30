@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\DataTables\UsersDataTable;
 use App\Http\Controllers\Controller;
+use App\Services\ActivityLogService;
 
 class UserController extends Controller
 {
@@ -65,7 +68,7 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        $user = User::with(['parentUser', 'createdBy', 'roles'])->findOrFail($id);
+        $user = User::with(['parentUser', 'createdBy', 'roles', 'hotels', 'accessibleHotels'])->findOrFail($id);
         return view('users.show', compact('user'));
     }
 
@@ -153,5 +156,148 @@ class UserController extends Controller
         }
 
         return to_route('users.index')->with('success', 'User deleted successfully!');
+    }
+
+    /**
+     * Show the form for editing user roles
+     */
+    public function editRoles(string $id)
+    {
+        $user = User::with('roles')->findOrFail($id);
+        $currentUser = Auth::user();
+
+        // Check permissions
+        // Super admin can assign roles to anyone
+        // Hotel owners can only assign roles to their staff
+        if (!$currentUser->isSuperAdmin()) {
+            if ($user->isSuperAdmin()) {
+                abort(403, 'You cannot assign roles to super admin users.');
+            }
+
+            if ($currentUser->isHotelOwner()) {
+                // Hotel owners can only manage their own staff
+                if ($user->parent_user_id !== $currentUser->id) {
+                    abort(403, 'You can only assign roles to your own staff members.');
+                }
+            } else {
+                // Staff cannot assign roles
+                abort(403, 'You do not have permission to assign roles.');
+            }
+        }
+
+        // Get available roles based on user type
+        if ($currentUser->isSuperAdmin()) {
+            // Super admin can assign any role
+            $availableRoles = Role::with('permissions')->orderBy('scope')->orderBy('name')->get();
+        } else {
+            // Hotel owners can assign:
+            // 1. System roles (scope = 'system')
+            // 2. Their own custom roles (scope = 'hotel_owner', hotel_owner_id = current user id)
+            $availableRoles = Role::with('permissions')->where(function ($query) use ($currentUser) {
+                $query->where('scope', 'system')
+                    ->orWhere(function ($q) use ($currentUser) {
+                        $q->where('scope', 'hotel_owner')
+                            ->where('hotel_owner_id', $currentUser->id);
+                    });
+            })->orderBy('scope')->orderBy('name')->get();
+        }
+
+        return view('users.components.edit-roles', compact('user', 'availableRoles'));
+    }
+
+    /**
+     * Update user roles
+     */
+    public function updateRoles(Request $request, string $id)
+    {
+        $user = User::findOrFail($id);
+        $currentUser = Auth::user();
+
+        // Check permissions (same as editRoles)
+        if (!$currentUser->isSuperAdmin()) {
+            if ($user->isSuperAdmin()) {
+                abort(403, 'You cannot assign roles to super admin users.');
+            }
+
+            if ($currentUser->isHotelOwner()) {
+                if ($user->parent_user_id !== $currentUser->id) {
+                    abort(403, 'You can only assign roles to your own staff members.');
+                }
+            } else {
+                abort(403, 'You do not have permission to assign roles.');
+            }
+        }
+
+        $request->validate([
+            'roles' => 'nullable|array',
+            'roles.*' => 'exists:roles,id',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Get current roles
+            $currentRoleIds = $user->roles()->pluck('roles.id')->toArray();
+            $newRoleIds = $request->roles ?? [];
+
+            // Validate that hotel owners can only assign roles they're allowed to
+            if (!$currentUser->isSuperAdmin()) {
+                $allowedRoleIds = Role::where(function ($query) use ($currentUser) {
+                    $query->where('scope', 'system')
+                        ->orWhere(function ($q) use ($currentUser) {
+                            $q->where('scope', 'hotel_owner')
+                                ->where('hotel_owner_id', $currentUser->id);
+                        });
+                })->pluck('id')->toArray();
+
+                // Check if all new roles are allowed
+                $invalidRoles = array_diff($newRoleIds, $allowedRoleIds);
+                if (!empty($invalidRoles)) {
+                    return back()->withInput()->withErrors(['roles' => 'You do not have permission to assign some of the selected roles.']);
+                }
+            }
+
+            // Sync roles with pivot data
+            $syncData = [];
+            foreach ($newRoleIds as $roleId) {
+                $syncData[$roleId] = [
+                    'assigned_by' => $currentUser->id,
+                    'assigned_at' => now(),
+                ];
+            }
+
+            $user->roles()->sync($syncData);
+
+            // Clear permission cache for this user
+            $user->clearPermissionCache();
+
+            // Log activity
+            $addedRoles = array_diff($newRoleIds, $currentRoleIds);
+            $removedRoles = array_diff($currentRoleIds, $newRoleIds);
+
+            if (!empty($addedRoles) || !empty($removedRoles)) {
+                $roleNames = empty($newRoleIds)
+                    ? ['None']
+                    : Role::whereIn('id', $newRoleIds)->pluck('name')->toArray();
+
+                $description = empty($roleNames) || (count($roleNames) === 1 && $roleNames[0] === 'None')
+                    ? "Removed all roles from {$user->username}"
+                    : "Assigned roles to {$user->username}: " . implode(', ', $roleNames);
+
+                app(ActivityLogService::class)->log(
+                    'assign_roles',
+                    'user',
+                    $user->id,
+                    $description
+                );
+            }
+
+            DB::commit();
+
+            return to_route('users.show', $user->id)
+                ->with('success', 'User roles updated successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Error updating roles: ' . $e->getMessage());
+        }
     }
 }

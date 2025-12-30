@@ -27,7 +27,15 @@ class HotelController extends Controller
      */
     public function create()
     {
-        return view('hotels.components.create');
+        $hotelOwners = null;
+        if (Auth::user()->isSuperAdmin()) {
+            $hotelOwners = User::where('user_type', 'hotel_owner')
+                ->where('status', 'active')
+                ->orderBy('full_name')
+                ->orderBy('username')
+                ->get();
+        }
+        return view('hotels.components.create', compact('hotelOwners'));
     }
 
     /**
@@ -40,7 +48,7 @@ class HotelController extends Controller
             abort(403, 'You do not have permission to create hotels.');
         }
 
-        $request->validate([
+        $validationRules = [
             'name' => 'required|string|max:200',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',
@@ -52,7 +60,14 @@ class HotelController extends Controller
             'description' => 'nullable|string',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        ];
+
+        // Super admin can assign hotel to any hotel owner
+        if (Auth::user()->isSuperAdmin()) {
+            $validationRules['user_id'] = 'nullable|exists:users,id';
+        }
+
+        $request->validate($validationRules);
 
         // Generate unique slug
         $slug = Str::slug($request->name);
@@ -132,7 +147,16 @@ class HotelController extends Controller
             abort(403, 'You do not have access to this hotel.');
         }
 
-        return view('hotels.components.edit', compact('hotel'));
+        $hotelOwners = null;
+        if (Auth::user()->isSuperAdmin()) {
+            $hotelOwners = User::where('user_type', 'hotel_owner')
+                ->where('status', 'active')
+                ->orderBy('full_name')
+                ->orderBy('username')
+                ->get();
+        }
+
+        return view('hotels.components.edit', compact('hotel', 'hotelOwners'));
     }
 
     /**
@@ -151,7 +175,7 @@ class HotelController extends Controller
             abort(403, 'You do not have access to this hotel.');
         }
 
-        $request->validate([
+        $validationRules = [
             'name' => 'required|string|max:200',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',
@@ -164,7 +188,14 @@ class HotelController extends Controller
             'status' => 'required|in:active,inactive,archived',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        ];
+
+        // Super admin can change hotel owner
+        if (Auth::user()->isSuperAdmin()) {
+            $validationRules['user_id'] = 'nullable|exists:users,id';
+        }
+
+        $request->validate($validationRules);
 
         // Update slug if name changed
         if ($hotel->name !== $request->name) {
@@ -178,7 +209,7 @@ class HotelController extends Controller
             $hotel->slug = $slug;
         }
 
-        $hotel->update([
+        $updateData = [
             'name' => $request->name,
             'slug' => $hotel->slug,
             'address' => $request->address,
@@ -190,7 +221,14 @@ class HotelController extends Controller
             'email' => $request->email,
             'description' => $request->description,
             'status' => $request->status,
-        ]);
+        ];
+
+        // Super admin can change hotel owner
+        if (Auth::user()->isSuperAdmin() && $request->has('user_id')) {
+            $updateData['user_id'] = $request->user_id;
+        }
+
+        $hotel->update($updateData);
 
         // Handle new image uploads
         if ($request->hasFile('images')) {

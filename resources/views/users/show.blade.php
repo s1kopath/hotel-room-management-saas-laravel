@@ -94,6 +94,141 @@
             </div>
             @endif
 
+            @if($user->isHotelOwner() && $user->hotels->count() > 0)
+            <div class="mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="text-uppercase text-dark font-weight-bolder mb-0">Owned Hotels ({{ $user->hotels->count() }})</h6>
+                    <a href="{{ route('hotels.index') }}" class="btn btn-sm btn-primary">View All Hotels</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Hotel Name</th>
+                                <th>Location</th>
+                                <th>Rooms</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($user->hotels as $hotel)
+                            <tr>
+                                <td>
+                                    <strong>{{ $hotel->name }}</strong>
+                                    @if($hotel->slug)
+                                        <br><small class="text-muted">/{{ $hotel->slug }}</small>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($hotel->city || $hotel->country)
+                                        {{ $hotel->city }}{{ $hotel->city && $hotel->country ? ', ' : '' }}{{ $hotel->country }}
+                                    @else
+                                        <span class="text-muted">--</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">{{ $hotel->total_rooms ?? 0 }}</td>
+                                <td>
+                                    @if($hotel->status == 'active')
+                                        <span class="badge bg-success">Active</span>
+                                    @elseif($hotel->status == 'inactive')
+                                        <span class="badge bg-warning">Inactive</span>
+                                    @else
+                                        <span class="badge bg-secondary">Archived</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <a href="{{ route('hotels.show', $hotel->id) }}" class="btn btn-sm btn-info">View</a>
+                                    @hasPermission('hotels.edit-own')
+                                    <a href="javascript:void(0)" onclick="loadModal('{{ route('hotels.edit', $hotel->id) }}')" 
+                                        class="btn btn-sm btn-primary">Edit</a>
+                                    @endhasPermission
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @elseif($user->isHotelOwner() && $user->hotels->count() == 0)
+            <div class="mt-4">
+                <div class="alert alert-info">
+                    <i class="material-symbols-rounded">info</i>
+                    This hotel owner doesn't have any hotels yet.
+                    @hasPermission('hotels.create')
+                    <a href="{{ route('hotels.create') }}" class="btn btn-sm btn-primary mt-2">Create First Hotel</a>
+                    @endhasPermission
+                </div>
+            </div>
+            @endif
+
+            @if($user->isStaff() && $user->accessibleHotels->count() > 0)
+            <div class="mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="text-uppercase text-dark font-weight-bolder mb-0">Accessible Hotels ({{ $user->accessibleHotels->count() }})</h6>
+                    @if($user->parentUser && (auth()->user()->isSuperAdmin() || auth()->user()->id == $user->parent_user_id))
+                    <a href="{{ route('users.hotel-access', $user->id) }}" class="btn btn-sm btn-info">Manage Access</a>
+                    @endif
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Hotel Name</th>
+                                <th>Owner</th>
+                                <th>Location</th>
+                                <th>Rooms</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($user->accessibleHotels as $hotel)
+                            <tr>
+                                <td>
+                                    <strong>{{ $hotel->name }}</strong>
+                                </td>
+                                <td>
+                                    {{ $hotel->owner ? ($hotel->owner->full_name ?? $hotel->owner->username) : '--' }}
+                                </td>
+                                <td>
+                                    @if($hotel->city || $hotel->country)
+                                        {{ $hotel->city }}{{ $hotel->city && $hotel->country ? ', ' : '' }}{{ $hotel->country }}
+                                    @else
+                                        <span class="text-muted">--</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">{{ $hotel->total_rooms ?? 0 }}</td>
+                                <td>
+                                    @if($hotel->status == 'active')
+                                        <span class="badge bg-success">Active</span>
+                                    @elseif($hotel->status == 'inactive')
+                                        <span class="badge bg-warning">Inactive</span>
+                                    @else
+                                        <span class="badge bg-secondary">Archived</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <a href="{{ route('hotels.show', $hotel->id) }}" class="btn btn-sm btn-info">View</a>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @elseif($user->isStaff() && $user->accessibleHotels->count() == 0)
+            <div class="mt-4">
+                <div class="alert alert-warning">
+                    <i class="material-symbols-rounded">warning</i>
+                    This staff member doesn't have access to any hotels yet.
+                    @if($user->parentUser && (auth()->user()->isSuperAdmin() || auth()->user()->id == $user->parent_user_id))
+                    <a href="{{ route('users.hotel-access', $user->id) }}" class="btn btn-sm btn-primary mt-2">Grant Hotel Access</a>
+                    @endif
+                </div>
+            </div>
+            @endif
+
             <div class="mt-4">
                 <a href="{{ route('users.index') }}" class="btn btn-secondary">Back to List</a>
                 <a href="javascript:void(0)" onclick="loadModal('{{ route('users.edit', $user->id) }}')" 
@@ -101,6 +236,12 @@
                 @if($user->isStaff() && (auth()->user()->isSuperAdmin() || auth()->user()->id == $user->parent_user_id))
                 <a href="{{ route('users.hotel-access', $user->id) }}" class="btn btn-info">
                     Manage Hotel Access
+                </a>
+                @endif
+                @if((auth()->user()->isSuperAdmin() || (auth()->user()->isHotelOwner() && $user->parent_user_id == auth()->id())) && !$user->isSuperAdmin())
+                <a href="javascript:void(0)" onclick="loadModal('{{ route('users.roles.edit', $user->id) }}')" 
+                    class="btn btn-warning">
+                    Manage Roles
                 </a>
                 @endif
             </div>

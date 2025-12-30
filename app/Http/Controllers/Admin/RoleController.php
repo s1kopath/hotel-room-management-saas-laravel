@@ -200,8 +200,18 @@ class RoleController extends Controller
             // Sync permissions
             if ($request->has('permissions')) {
                 $role->permissions()->sync($request->permissions);
+
+                // Clear permission cache for all users with this role
+                $role->users()->each(function ($user) {
+                    $user->clearPermissionCache();
+                });
             } else {
                 $role->permissions()->detach();
+                
+                // Clear permission cache for all users with this role
+                $role->users()->each(function ($user) {
+                    $user->clearPermissionCache();
+                });
             }
 
             // Log activity

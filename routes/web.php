@@ -43,6 +43,12 @@ Route::middleware(['admin'])->group(function () {
         Route::resource('users', UserController::class);
     });
 
+    // User Role Assignment - Super admin and hotel owners (for their staff)
+    Route::middleware(['admin'])->group(function () {
+        Route::get('/users/{user}/roles/edit', [UserController::class, 'editRoles'])->name('users.roles.edit');
+        Route::put('/users/{user}/roles', [UserController::class, 'updateRoles'])->name('users.roles.update');
+    });
+
     // Hotel Access Management (Hotel Owners can manage their staff)
     Route::middleware(['admin'])->group(function () {
         Route::get('/users/{user}/hotel-access', [UserHotelAccessController::class, 'index'])->name('users.hotel-access');

@@ -87,8 +87,7 @@ class User extends Authenticatable implements CanResetPassword
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'user_roles')
-            ->withPivot('assigned_by', 'assigned_at')
-            ->withTimestamps();
+            ->withPivot('assigned_by', 'assigned_at');
     }
 
     public function hotels(): HasMany
@@ -211,11 +210,30 @@ class User extends Authenticatable implements CanResetPassword
             return true;
         }
 
-        return $this->roles()
-            ->whereHas('permissions', function ($query) use ($permissionName) {
-                $query->where('name', $permissionName);
-            })
-            ->exists();
+        // Cache key for user permissions
+        $cacheKey = "user_permissions_{$this->id}";
+        
+        // Get cached permissions or load from database
+        $permissions = cache()->remember($cacheKey, 3600, function () {
+            return $this->roles()
+                ->with('permissions')
+                ->get()
+                ->pluck('permissions')
+                ->flatten()
+                ->pluck('name')
+                ->unique()
+                ->toArray();
+        });
+
+        return in_array($permissionName, $permissions);
+    }
+
+    /**
+     * Clear permission cache for this user
+     */
+    public function clearPermissionCache(): void
+    {
+        cache()->forget("user_permissions_{$this->id}");
     }
 
     /**

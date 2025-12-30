@@ -5,6 +5,27 @@
 <form method="POST" action="{{ route('hotels.store') }}" enctype="multipart/form-data">
     @csrf
     <div class="modal-body">
+        @if(auth()->user()->isSuperAdmin() && isset($hotelOwners) && $hotelOwners->count() > 0)
+        <div class="mb-3">
+            <label for="user_id" class="form-label">Hotel Owner
+                <span class="text-danger">*</span>
+            </label>
+            <select class="form-select border rounded-3 @error('user_id') is-invalid @enderror" 
+                id="user_id" name="user_id" required>
+                <option value="">Select Hotel Owner</option>
+                @foreach($hotelOwners as $owner)
+                    <option value="{{ $owner->id }}" {{ old('user_id') == $owner->id ? 'selected' : '' }}>
+                        {{ $owner->full_name ?? $owner->username }} ({{ $owner->email }})
+                    </option>
+                @endforeach
+            </select>
+            <small class="text-muted">Select the hotel owner who will own this hotel.</small>
+            @error('user_id')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+        @endif
+
         <div class="mb-3">
             <label for="name" class="form-label">Hotel Name
                 <span class="text-danger">*</span>

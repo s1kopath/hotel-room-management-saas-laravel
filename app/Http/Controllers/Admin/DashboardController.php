@@ -62,16 +62,16 @@ class DashboardController extends Controller
             ->get();
 
         // Hotels with most admin reserved rooms
-        $hotelsWithAdminRooms = Hotel::withCount(['rooms as admin_reserved_count' => function($query) {
+        $hotelsWithAdminRooms = Hotel::withCount(['rooms as admin_reserved_count' => function ($query) {
             $query->where('status', 'admin_reserved');
         }])
-        ->having('admin_reserved_count', '>', 0)
-        ->orderBy('admin_reserved_count', 'desc')
-        ->limit(10)
-        ->get();
+            ->having('admin_reserved_count', '>', 0)
+            ->orderBy('admin_reserved_count', 'desc')
+            ->limit(10)
+            ->get();
 
         // All hotels
-        $allHotels = Hotel::with(['user', 'rooms'])
+        $allHotels = Hotel::with(['owner', 'rooms'])
             ->withCount('rooms')
             ->orderBy('created_at', 'desc')
             ->limit(20)
